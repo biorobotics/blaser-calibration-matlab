@@ -7,9 +7,12 @@ clear
 
 %camera = 'blaser';
 %camera = 'A1003_Calib03';
-camera = 'BlaserA1001_960';
+%camera = 'BlaserA1001_960';
 %v = VideoReader([camera,'.mp4']);
-v = VideoReader([camera,'.avi']);
+%v = VideoReader([camera,'.avi']);
+
+v = VideoReader('A1004_Calib_960_03.mp4');
+
 squareSize = 4; % mm
 boardSize = [7,10];
 [worldPoints] = generateCheckerboardPoints(boardSize,squareSize);
