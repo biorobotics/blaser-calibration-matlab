@@ -236,8 +236,13 @@ disp('------------------------------------------------------------------');
 
 %% Hand Eye Calibration
 
-img_hand = imread('BlaserEndEffector.png');
+%img_hand = imread('BlaserEndEffector.png');
+img_hand = imread('blaser_1280x960.png');
+
 [hand_imagePoints,hand_boardSize] = detectCheckerboardPoints(img_hand);
+
+hand_squareSize = 6; % in millimeters
+hand_worldPoints = generateCheckerboardPoints(hand_boardSize, hand_squareSize);
 
 % show original image
 figure;
@@ -252,20 +257,31 @@ subplot(1,2,2); imshow(im);
 hold on;
 %plot(hand_imagePoints(:,1),hand_imagePoints(:,2),'ro');
 [hand_imagePoints,hand_boardSize] = detectCheckerboardPoints(im);
+
+%
+hand_imagePoints = [hand_imagePoints(:,1) + newOrigin(1), ...
+             hand_imagePoints(:,2) + newOrigin(2)];
+
 plot(hand_imagePoints(:,1),hand_imagePoints(:,2),'bo');
 plot(hand_imagePoints(1,1),hand_imagePoints(1,2),'r+');
 
-hand_squareSize = 4; % in millimeters
-hand_worldPoints = generateCheckerboardPoints(hand_boardSize, hand_squareSize);
+[hand_R, hand_t] = extrinsics(hand_imagePoints, hand_worldPoints, cameraParams);
 
-[hand_R, hand_t] = extrinsics(hand_imagePoints+newOrigin, hand_worldPoints, cameraParams);
+% Compute camera pose.
+[orientation, location] = extrinsicsToCameraPose(hand_R, hand_t);
+
+figure
+plotCamera('Location',location,'Orientation',orientation,'Size',5);
+hold on
+pcshow([worldPoints,zeros(size(worldPoints,1),1)], ...
+  'VerticalAxisDir','down','MarkerSize',40);
 
 imagePoints_origin = hand_imagePoints(1,:);
 worldPoints_origin = pointsToWorld(cameraParams, hand_R, hand_t, imagePoints_origin);
 
 worldPoints_origin = [worldPoints_origin 0]
 [~, cameraLocation] = extrinsicsToCameraPose(hand_R, hand_t);
-distanceToCamera = norm(worldPoints_origin - cameraLocation);
+distanceToCamera = norm(worldPoints_origin - cameraLocation)
 
 
 %% Save to file
