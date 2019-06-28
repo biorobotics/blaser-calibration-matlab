@@ -11,56 +11,77 @@ clear
 %v = VideoReader([camera,'.mp4']);
 %v = VideoReader([camera,'.avi']);
 
-v = VideoReader('A1004_Calib_960_03.mp4');
+% v = VideoReader('BlaserA1001_960.avi');
+v = VideoReader('a1001_640x480_calib_final.mp4');
 
-squareSize = 4; % mm
+squareSize = 5; % mm
+skip_factor = 9; % integer plz
 boardSize = [7,10];
 [worldPoints] = generateCheckerboardPoints(boardSize,squareSize);
-n_frame = round(v.Duration*v.FrameRate/7)-2;
-threshold = 200;
+n_frame = round(v.Duration*v.FrameRate)-2;
+disp(n_frame);
+threshold = 180;
 imagePoints_all = [];
 laserPoints_all = [];
 frame = [];
 % obj = VideoWriter('blaser_calib.avi');
 % open(obj)
-for i = 1:n_frame
-    I = read(v,i*7);
+% for i = 1:n_frame
+i = 1;
+while i < n_frame
+    fprintf('image %d\n', i)
+    I = read(v,i);
 %     I = read(v,i);
+    clf;
+    imshow(I);
+    drawnow;
+
     try
         [imagePoints,boardSize_detected] = detectCheckerboardPoints(I);
     catch
+        i = i+1;
         continue
     end
+    hold on;
+    plot(imagePoints(:,1), imagePoints(:,2), 'r');
+    drawnow;
+
     if norm(boardSize - boardSize_detected)>0.1
+        i = i+1;
         continue
     end
     try
         imagePoints_all = cat(3,imagePoints_all,flip(imagePoints,1)); %why flip
     catch
+        i = i+1;
         continue
     end 
-    imshow(I);
     pixel_data_valid = extractPixelDataFromImg(I, threshold);
     coeffs = polyfit(pixel_data_valid(:,1), pixel_data_valid(:,2), 1);
     [B,fitness] = sort(abs(polyval(coeffs, pixel_data_valid(:,1))-pixel_data_valid(:,2)));
+    
+    scatter(imagePoints(1,1), imagePoints(1,2), 'p');
+    hold on;
+    drawnow;
+
     if (size(fitness, 1) < 100)
+        i = i+1;
         continue
     end
+    hold on;
     laserPoints_all = cat(3,laserPoints_all,pixel_data_valid(fitness(1:100),:));
     f_end = ceil(size(fitness, 1) * 0.8);
-    hold on; 
     scatter(pixel_data_valid(fitness(1:f_end),1),pixel_data_valid(fitness(1:f_end),2),5,'g','fill');
+    drawnow;
 %     scatter(pixel_data_valid(:,1),pixel_data_valid(:,2));
-    plot(imagePoints(:,1), imagePoints(:,2), 'r');
-    scatter(imagePoints(1,1), imagePoints(1,2), 'p');
-    frame = [frame,i*7];
+    frame = [frame,i*skip_factor];
 %     if i == 1
 %         pause();
 %     end
-    drawnow;
 %     imwrite(video,[num2str(i),'.tif']);
 %     frame = getframe(gcf);
 %     writeVideo(obj,frame);
+    i = i+skip_factor;
 
 end
 % close(obj);
@@ -90,6 +111,10 @@ for i = 1:size(frame,2)
 end
 
 %% fit laser plane using fit poly11 mechod
+
+% if u see points way out of the norm, kill them here.
+laser_point(:, laser_point(2,:) > 0) = [];
+
 [fitresult, gof, plane] = fit3DFitPlane(laser_point(1,:),laser_point(2,:),laser_point(3,:));
 
 %% Prepare laser points and fit plane using SVD method
@@ -234,6 +259,25 @@ disp(text);
 
 disp('------------------------------------------------------------------');
 
+%% Compare with 'ground truth'
+
+figure
+% showExtrinsics(cameraParams, 'CameraCentric');
+scatter3(laser_point(1,:),laser_point(3,:),laser_point(2,:),'r');
+
+[xx,yy] = meshgrid(-20:20,-30:20);
+zz = -1*(plane.a/5*xx + plane.b*yy + plane.d)/plane.c;
+hold on
+surf(xx,zz,yy);
+
+zz_gt = -1*(6.4656*xx -209.0053*yy + 3554.7677)/(-100);
+hold on
+s = surf(xx,zz_gt,yy);
+s.CData = 20+ones(size(yy));
+
+% figure
+% surf(xx, yy, zz-zz_gt)
+
 %% Hand Eye Calibration
 
 %img_hand = imread('BlaserEndEffector.png');
@@ -279,10 +323,12 @@ pcshow([worldPoints,zeros(size(worldPoints,1),1)], ...
 imagePoints_origin = hand_imagePoints(1,:);
 worldPoints_origin = pointsToWorld(cameraParams, hand_R, hand_t, imagePoints_origin);
 
-worldPoints_origin = [worldPoints_origin 0]
+worldPoints_origin = [worldPoints_origin 0];
 [~, cameraLocation] = extrinsicsToCameraPose(hand_R, hand_t);
-distanceToCamera = norm(worldPoints_origin - cameraLocation)
+distanceToCamera = norm(worldPoints_origin - cameraLocation);
 
+disp(hand_R)
+disp(hand_t)
 
 %% Save to file
 % fileID = fopen([camera,'.yaml'],'w');
