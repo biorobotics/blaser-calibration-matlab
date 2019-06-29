@@ -2,7 +2,6 @@
 addpath('blaser_data/handeye_data');
 clear
 
-load('640x480_a1001_params.mat');
 hand_boardSize = [7 10];
 hand_squareSize = .005; %metess
 hand_worldPoints = generateCheckerboardPoints(hand_boardSize, hand_squareSize);
