@@ -1,5 +1,5 @@
 %% Start
-addpath('blaser_data/handeye_data');
+addpath('blaser_data/handeye_data/640_v2');
 clear
 
 hand_boardSize = [7 10];
@@ -152,7 +152,8 @@ zz = A{1}*aff/(B{1});
 trplot(zz, 'length',.05, 'color','black');
 hold on;
 cm = hsv(n_val);
-err = [];
+positions = [];
+norms = [];
 for i=1:n_val
     trplot(A{i}, 'length',.04, 'rgb', 'rviz');
     hold on;
@@ -165,11 +166,20 @@ for i=1:n_val
    
    feat = A{i}*aff/B{i};
    trplot(A{i}*aff/B{i}, 'length',.05, 'color',cm(i,:));
-   err = [err; feat(1:3,4)'];
+   positions = [positions; feat(1:3,4)'];
+   norms = [norms; feat(1:3,3)'];
 end
 axis tight;
 axis vis3d;
 
-disp(std(err))
+disp(std(positions))
 % print in format easy for URDF
 sprintf('xyz="%f %f %f" rpy="%f %f %f"', X(4), X(5), X(6), X(1), X(2), X(3))
+
+
+%% Save relevant information
+checkerboard_loc = mean(positions);
+checkerboard_norm = mean(norms)';
+% MAKE SURE YOU HAVE THE RIGHT FILENAME
+% save('640_affine', 'aff', 'checkerboard_loc', 'checkerboard_norm');
+
