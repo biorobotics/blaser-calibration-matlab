@@ -1,5 +1,6 @@
 %% Start
-addpath('blaser_data/handeye_data/640_v2');
+% addpath('blaser_data/handeye_data/640_v2');
+addpath('blaser_data/handeye_data/1280_v1');
 clear
 
 hand_boardSize = [7 10];
@@ -8,7 +9,7 @@ hand_worldPoints = generateCheckerboardPoints(hand_boardSize, hand_squareSize);
 
 %% load file
 f = fopen('data.txt','r');
-n_val = 9;
+n_val = 7;
 A = cell(n_val, 1);
 B = cell(n_val, 1);
 
@@ -23,7 +24,21 @@ for i = 1:n_val
     
     fname = fscanf(f, '%s\n', 1);
     img = imread(fname);
+    clf;
+    imshow(img);
+    hold on;
     [imagePoints,boardSize_detected] = detectCheckerboardPoints(img);
+        
+    plot(imagePoints(:,1), imagePoints(:,2), 'r');
+    drawnow;
+    
+    if norm(hand_boardSize - boardSize_detected)>0.1
+        disp(fname);
+        break
+    end
+    
+    pause(.2);
+
     imagePoints_all = cat(3,imagePoints_all,flip(imagePoints,1)); %why flip
 end
 
@@ -105,7 +120,7 @@ for i=1:n_val
         F = f_w * F(:);
         G = g_w * (Ra - eye(3))*[x;y;z] - rot*tb + ta;
         
-        Ji = jacobian([F;G], [r,p,y,x,y,z]);
+        Ji = jacobian([F;G], [r,p,w,x,y,z]);
 
         H = [H;F;G];
         J = [J;Ji];
@@ -115,7 +130,7 @@ end
 jtj = combine(J' * J);
 jth = combine(J' * H);
 
-%% iter step (runs until error decreases by less than 1E-7)
+%% iter step (runs until error decreases by less than 5E-4)
 prev_err = inf;
 cll = num2cell(X);
 [r,p,w,x,y,z] = cll{:};
@@ -125,7 +140,7 @@ disp(err)
 
 % Using levenberg marquardt
 mu = .8;
-while prev_err/err-1 > 1E-7
+while prev_err/err-1 > 5E-4
     lhs = vpa(subs(jtj)) + mu*eye(6);
     rhs = -vpa(subs(jth));
     dX = double(lhs\rhs);
@@ -181,5 +196,5 @@ sprintf('xyz="%f %f %f" rpy="%f %f %f"', X(4), X(5), X(6), X(1), X(2), X(3))
 checkerboard_loc = mean(positions);
 checkerboard_norm = mean(norms)';
 % MAKE SURE YOU HAVE THE RIGHT FILENAME
-% save('640_affine', 'aff', 'checkerboard_loc', 'checkerboard_norm');
+% save('1280_affine', 'aff', 'checkerboard_loc', 'checkerboard_norm');
 

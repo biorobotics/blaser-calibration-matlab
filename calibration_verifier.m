@@ -7,7 +7,10 @@ load('640_affine.mat')
 load('a1001_640_calib.mat')
 laser_plane = [3.6048, -195.6298, -100, 3.6715319];
 
-n_val = 18;
+% checkerboard_loc = [ 0.061767456589209408790441813152938, 0.3562448559937710368394903071021, 0.052563745394203838234847836474728];
+% checkerboard_norm = [];
+
+n_val = 12;
 
 %% load file
 f = fopen('data.txt','r');
@@ -36,11 +39,12 @@ laser_points = cell(n_val, 1);
 
 figure;
 for i = 1:n_val
-    img = imread(B{i});
+%     img = imread(B{i});
+    img =  undistortImage(imread(B{i}), undistorter);
     [img, newOrigin] = undistortImage(img, cameraParams);
     laser_pixels = extractPixelDataFromImg(img, threshold);
     coeffs = polyfit(laser_pixels(:,1), laser_pixels(:,2), 1);
-    
+
     dists = abs(polyval(coeffs, laser_pixels(:,1)) - laser_pixels(:,2));
     pts = laser_pixels(dists < 1, :);
     
@@ -48,15 +52,86 @@ for i = 1:n_val
 %     imshow(img(:,:,1) > threshold);
     imshow(img);
     hold on;
-    plot([0,640], [0,640]*coeffs(1) + coeffs(2), 'g')
+    plot([0,1280], [0,640]*coeffs(1) + coeffs(2), 'g')
     scatter(pts(:,1), pts(:,2), 2, 'g');
-%     pause(0.5);
+    pause(0.5);
 
     laser_points{i} = pts;
 %     pts3d = K \ [pts';ones(1,size(pts,1))];
 %     z = -laser_plane(4) ./ (laser_plane(1:3) * pts3d);
 %     laser_points{i} = pts3d .* z;
 end
+
+
+%% optimization?? idk setup step
+threshold = 200;
+K = cameraParams.IntrinsicMatrix';
+
+scs = [];
+fcs = [];
+xyz = [];
+
+for i = 1:n_val
+    img = imread(B{i});
+    [img, newOrigin] = undistortImage(img, cameraParams);
+    laser_pixels = extractPixelDataFromImg(img, threshold);
+    coeffs = polyfit(laser_pixels(:,1), laser_pixels(:,2), 1);
+    
+    dists = abs(polyval(coeffs, laser_pixels(:,1)) - laser_pixels(:,2));
+    pts = laser_pixels(dists < 1, :);
+    unitless = K \ [pts';ones(1,size(pts,1))];
+
+    to_world = A{i}*aff;
+    fc = (to_world(1:3,4) - checkerboard_loc')' * checkerboard_norm;
+    sc = (to_world(1:3,1:3) * unitless)' * checkerboard_norm;
+    
+    scs = [scs;sc];
+    fcs = [fcs;repmat(fc, size(sc))];
+    xyz = [xyz; unitless'];
+
+end
+
+%% run iter
+a = laser_plane(1);
+b = laser_plane(2);
+d = laser_plane(4);
+
+prev_err = inf;
+err = 1000000;
+% err = norm(H);
+% disp('Init error')
+% disp(err)
+
+mu = .8;
+while prev_err/err-1 > 1E-9
+    halp = xyz * [a;b;-100];
+    H = -d./halp .* scs + fcs;
+    J = [d*xyz(:,1) ./halp ./halp, d*xyz(:,2) ./halp ./halp, -1./halp] .*scs;
+    
+    jtj = J'*J;
+    jth = J'*H;
+    
+    lhs = jtj + mu*eye(3);
+    rhs = -jth;
+    dX = double(lhs\rhs);
+%     X = X+dX;
+    a = a + dX(1);
+    b = b + dX(2);
+    d = d + dX(3);
+
+    prev_err = err;
+    err = norm(H);
+    disp('Error:');
+    disp(err);
+end
+
+disp('Done!');
+disp('Final err:');
+disp(err);
+beep;
+
+laser_plane = [a,b,-100,d]
+
 
 %% Show everyting
 stitched_cloud = [];
@@ -101,75 +176,6 @@ surf(x, y, z);
 axis normal;
 
 
-
-
-
-
-%% optimization?? idk
-threshold = 200;
-K = cameraParams.IntrinsicMatrix';
-
-scs = [];
-fcs = [];
-xyz = [];
-
-for i = 1:n_val
-    img = imread(B{i});
-    [img, newOrigin] = undistortImage(img, cameraParams);
-    laser_pixels = extractPixelDataFromImg(img, threshold);
-    coeffs = polyfit(laser_pixels(:,1), laser_pixels(:,2), 1);
-    
-    dists = abs(polyval(coeffs, laser_pixels(:,1)) - laser_pixels(:,2));
-    pts = laser_pixels(dists < 1, :);
-    unitless = K \ [pts';ones(1,size(pts,1))];
-
-    to_world = A{i}*aff;
-    fc = (to_world(1:3,4) - checkerboard_loc')' * checkerboard_norm;
-    sc = (to_world(1:3,1:3) * unitless)' * checkerboard_norm;
-    
-    scs = [scs;sc];
-    fcs = [fcs;repmat(fc, size(sc))];
-    xyz = [xyz; unitless'];
-
-end
-
-%% run iter
-a = laser_plane(1);
-b = laser_plane(2);
-d = laser_plane(4);
-
-prev_err = inf;
-err = 1000000;
-% err = norm(H);
-% disp('Init error')
-% disp(err)
-
-mu = .8;
-while prev_err/err-1 > 1E-7
-    halp = xyz * [a;b;-100];
-    H = -d./halp .* scs + fcs;
-    J = [d*xyz(:,1) ./halp ./halp, d*xyz(:,2) ./halp ./halp, -1./halp] .*scs;
-    
-    jtj = J'*J;
-    jth = J'*H;
-    
-    lhs = jtj + mu*eye(3);
-    rhs = -jth;
-    dX = double(lhs\rhs);
-%     X = X+dX;
-    a = a + dX(1);
-    b = b + dX(2);
-    d = d + dX(3);
-
-    prev_err = err;
-    err = norm(H);
-    disp('Error:');
-    disp(err);
-end
-
-disp('Done!');
-disp('Final err:');
-disp(err);
-beep;
-
-laser_plane = [a,b,-100,d]
+str = sprintf("[%.6f, %.6f, -100, %.6f]",...
+    laser_plane(1), laser_plane(2), 1000*laser_plane(4));
+disp(str);
