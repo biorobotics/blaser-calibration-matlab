@@ -4,8 +4,8 @@ addpath('blaser_data');
 clear
 
 %% Load images for camera calibration (just to get undistort coeffs)
-% v = VideoReader('a1001_1280x960_calib_final.mp4');
-v = VideoReader('a1001_640x480_calib_final.mp4');
+v = VideoReader('a1001_1280x960_calib_final.mp4');
+% v = VideoReader('a1001_640x480_calib_final.mp4');
 
 squareSize = 5; % mm
 skip_factor = 10; % integer plz
@@ -174,7 +174,7 @@ end
 disp(str + "1]")
 
 %% Save to file
-save('a1001_640_calib', 'undistorter', 'cameraParams');
+% save('a1001_640_calib', 'undistorter', 'cameraParams');
 
 
 

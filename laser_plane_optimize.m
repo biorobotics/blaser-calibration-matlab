@@ -1,14 +1,12 @@
 %% Start (all the things that change go here... i think.)
-addpath('blaser_data/640_verify')
+addpath('blaser_data/1280_verify')
 addpath('blaser_util');
 clear
 
-load('640_affine.mat')
-load('a1001_640_calib.mat')
+load('1280_affine.mat')
+load('a1001_1280_calib.mat')
 laser_plane = [3.6048, -195.6298, -100, 3.6715319];
-
-% checkerboard_loc = [ 0.061767456589209408790441813152938, 0.3562448559937710368394903071021, 0.052563745394203838234847836474728];
-% checkerboard_norm = [];
+% laser_plane = [0, 0, -100, 0];
 
 n_val = 12;
 
@@ -32,7 +30,7 @@ for i = 1:n_val
 end
 
 %% Interpret laser points
-threshold = 200;
+threshold = 150;
 K = cameraParams.IntrinsicMatrix';
 
 laser_points = cell(n_val, 1);
@@ -42,19 +40,26 @@ for i = 1:n_val
 %     img = imread(B{i});
     img =  undistortImage(imread(B{i}), undistorter);
     [img, newOrigin] = undistortImage(img, cameraParams);
-    laser_pixels = extractPixelDataFromImg(img, threshold);
+%     laser_pixels = extractPixelDataFromImg(img, threshold);
+    laser_pixels = find_laser(img, 120);
+    
     coeffs = polyfit(laser_pixels(:,1), laser_pixels(:,2), 1);
 
     dists = abs(polyval(coeffs, laser_pixels(:,1)) - laser_pixels(:,2));
+    pts = laser_pixels(dists < 3, :);
+
+    coeffs2 = polyfit(pts(:,1), pts(:,2), 1);
+    dists = abs(polyval(coeffs2, laser_pixels(:,1)) - laser_pixels(:,2));
     pts = laser_pixels(dists < 1, :);
     
     clf;
 %     imshow(img(:,:,1) > threshold);
     imshow(img);
     hold on;
-    plot([0,1280], [0,640]*coeffs(1) + coeffs(2), 'g')
+    plot([0,1280], [0,1280]*coeffs2(1) + coeffs2(2), 'g')
+    scatter(laser_pixels(:,1), laser_pixels(:,2), .5, 'b');
     scatter(pts(:,1), pts(:,2), 2, 'g');
-    pause(0.5);
+    pause(1);
 
     laser_points{i} = pts;
 %     pts3d = K \ [pts';ones(1,size(pts,1))];
@@ -178,4 +183,5 @@ axis normal;
 
 str = sprintf("[%.6f, %.6f, -100, %.6f]",...
     laser_plane(1), laser_plane(2), 1000*laser_plane(4));
+disp("laser_plane:");
 disp(str);

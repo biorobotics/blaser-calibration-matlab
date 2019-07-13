@@ -76,15 +76,15 @@ axis vis3d;
 %% Optimization-based calibration method (init step)
 % https://pdfs.semanticscholar.org/d36c/d02f387724687ac3276f4cc449a30908c710.pdf
 % iterative optimization formula
-da = A{1}\A{2};
-db = B{1}\B{2};
+da = A{2}\A{3};
+db = B{2}\B{3};
 sing_eq = kron(da(1:3,1:3), eye(3)) - kron(eye(3), db(1:3,1:3)');
 [ev,D] = eigs(sing_eq'*sing_eq, 1, 'sm');
 [U,S,V] = svd(vec2mat(ev,3));
 R = U*V';
 R = R*sign(det(R));
 % t = (da(1:3,1:3)-eye(3))\(R*db(1:3,4)-da(1:3,4));
-X = [rotm2eul(R)';0;0;0]; % the math for initial position guess wasn't working out
+X = [flip(rotm2eul(R))';0;0;0]; % the math for initial position guess wasn't working out
 
 %% iter step setup
 syms x y z r p w
