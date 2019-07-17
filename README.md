@@ -6,7 +6,7 @@ Which includes:
  1. Load test video.
  2. Camera params calibration.
  3. Laser plane extraction.
- 4. Virification plots
+ 4. Verification plots
  5. Hand-Eye Calibration
  6. Save to file
  
