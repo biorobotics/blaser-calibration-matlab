@@ -19,15 +19,26 @@ zz = A{1,1}*aff/B1; % from camera pose to end effector.
 figure;
 trplot(zz, 'length',.05, 'color','black');
 hold on;
-cm = hsv(n_val);
 
-% positions = [];
-% norms = [];
-
+n_he = 0;
 for i=1:n_val
     if size(A{i,2},1) == 0
         continue
     end
+    n_he = n_he+1;
+end
+cm = hsv(n_he);
+
+% positions = [];
+% norms = [];
+
+
+count = 0;
+for i=1:n_val
+    if size(A{i,2},1) == 0
+        continue
+    end
+    count = count+1;
     
     [R, t] = calc_rot_trans(A{i,2}, world, state);
     Bi = [R,-R*t; 0,0,0,1];
@@ -37,16 +48,16 @@ for i=1:n_val
     hold on;
     
     % Camera pose (from end effector)
-    trplot(A{i,1}*aff, 'length',.05, 'color', cm(i,:));
+    trplot(A{i,1}*aff, 'length',.05, 'color', cm(count,:));
     hold on;
     
     % Camera pose v2 (from 1st camera)
     camloc = zz*Bi;
     plotCamera('Location', camloc(1:3,4), 'Orientation', camloc(1:3, 1:3)',...
-               'Size', .01, 'Color', cm(i,:));
+               'Size', .01, 'Color', cm(count,:));
    
     % Checkerboard pose
-    trplot(A{i,1}*aff/Bi, 'length',.05, 'color',cm(i,:));
+    trplot(A{i,1}*aff/Bi, 'length',.05, 'color',cm(count,:));
    
 %    positions = [positions; feat(1:3,4)'];
 %    norms = [norms; feat(1:3,3)'];

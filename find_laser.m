@@ -12,8 +12,8 @@ function [pts] = find_laser(img, thresh)
             continue
         end
         
-        [lmin, li] = min(col(1:imax));
-        [rmin, ri] = min(col(imax:size(col, 1)));
+        [lmin, ~] = min(col(1:imax));
+        [rmin, ~] = min(col(imax:size(col, 1)));
         
         prom = vmax - lmin;
         if rmin > lmin

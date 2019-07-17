@@ -20,7 +20,8 @@ function [retpts] = undistort_points(pts, state)
     K = [fx,0,0;0,fy,0;cx,cy,1];
     cp = cameraParameters('IntrinsicMatrix',K,...
         'RadialDistortion',[k1,k2,k3],'TangentialDistortion',[p1,p2]);
-    
+    retpts = cp.undistortPointsImpl(pts);
+
     % Inverse radial distortion coeffs
     % source: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4934233/
     % doi: 10.3390/s16060807
@@ -36,8 +37,6 @@ function [retpts] = undistort_points(pts, state)
 %     cdist = rsq.*(b1 + rsq.*(b2 + rsq.*(b3 + rsq.*b4)));
 %     xu = pts(:,1) + x0.*cdist;
 %     yu = pts(:,2) + y0.*cdist;
-
-    retpts = cp.undistortPointsImpl(pts);
 
 %     dx = (0:360)';
 %     inp = [cx+dx,cy*ones(size(dx))];
