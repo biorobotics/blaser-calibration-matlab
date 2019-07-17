@@ -25,7 +25,7 @@ function [pts] = find_laser(img, thresh)
         
         % find discontinuous indices
         seps = [1, find(diff(xs) > 5)'+1, size(xs,1)+1];
-        sex = find(seps >= find(xs==imax), 1)-1;
+        sex = find(seps > find(xs==imax), 1)-1;
         xs = xs(seps(sex) : seps(sex+1)-1);
         
         if size(xs,1) < 3
