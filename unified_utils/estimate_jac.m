@@ -6,7 +6,7 @@ function [J] = estimate_jac(f,state)
 
 nin = numel(state);
 
-step = 0.000001;
+step = 1e-6;
 
 vi = f(state);
 nout = size(vi, 1);

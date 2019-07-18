@@ -1,10 +1,13 @@
 % function [retpts, jac_x, jac_y] = undistort_points(pts, im_sz, cx, cy, k1, k2, p1, p2, k3)
+% function [retpts] = undistort_points(pts, state)
 function [retpts] = undistort_points(pts, state)
 % Undistorts pts according to Brown-Conrady method.
 % pts a Nx2 vector
 % all the others scalars
 % jac_x returns Nx7 (cx, cy, k1, k2, p1, p2, k3)
 % jac_y returns Nx7 (cx, cy, k1, k2, p1, p2, k3)
+
+%     syms fx fy cx cy k1 k2 p1 p2 k3;
 
     fx = state(1);
     fy = state(2);
@@ -14,11 +17,11 @@ function [retpts] = undistort_points(pts, state)
     k2 = state(6);
     p1 = state(7);
     p2 = state(8);
-%     p1 = 0; p2 = 0;
     k3 = state(9);
     npt = size(pts,1);
 
     K = [fx,0,0;0,fy,0;cx,cy,1];
+    Ki = [1/fx,0,0;0,1/fy,0;-cx/fx,-cy/fy,1];
 %     cp = cameraParameters('IntrinsicMatrix',K,...
 %         'RadialDistortion',[k1,k2,k3],'TangentialDistortion',[p1,p2]);
 %     redist = cp.undistortPointsImpl(pts);
@@ -26,7 +29,7 @@ function [retpts] = undistort_points(pts, state)
     
 
     % forward distortion
-    zpts = [pts,ones(npt,1)] / K;
+    zpts = [pts,ones(npt,1)] * Ki;
     x0 = zpts(:,1);
     y0 = zpts(:,2);
     rsq = x0.^2 + y0.^2;
@@ -40,6 +43,36 @@ function [retpts] = undistort_points(pts, state)
     redist = [2*x0-xd, 2*y0-yd, ones(npt,1)]*K;
     retpts = redist(:,1:2);
 
+    % Jacobian 
+    Jx = [-x0/fx, zeros(size(x0)),  -ones(size(x0))/fx, zeros(size(x0))]; 
+    Jy = [zeros(size(y0)), -y0/fy, zeros(size(x0)), -ones(size(y0))/fy ]; 
+    Jrsq = 2*(x0.*Jx + y0.*Jy);
+
+    Jcdist = k1*Jrsq + 2*k2*rsq.*Jrsq + 3*k3*(rsq.^2).*Jrsq;
+    Jk1 = rsq; 
+    Jk2 = rsq.^2; 
+    Jk3 = rsq.^3; 
+    
+    Jdx = p2*Jrsq + 4*p2*x0.*Jx + 2*p1*(x0.*Jy + y0.*Jx);
+    Jdy = p1*Jrsq + 4*p1*y0.*Jy + 2*p2*(x0.*Jy + y0.*Jx);
+    
+    Jxd = x0.*Jcdist + cdist.*Jx + Jdx;
+    Jxd = [Jxd, x0.*Jk1, x0.*Jk2, 2*x0.*y0, rsq + 2*x0.^2, x0.*Jk3];
+    
+    Jyd = y0.*Jcdist + cdist.*Jy + Jdy; 
+    Jyd = [Jyd, y0.*Jk1, y0.*Jk2, rsq + 2*y0.^2, 2*x0.*y0, y0.*Jk3];
+    
+    JKc1 = zeros(3,9);
+    JKc1(1,1) = 1;
+    JKc1(3,3) = 1;
+    Jrx = fx*(2*[Jx, zeros(npt,5)] - Jxd) + [2*x0-xd, 2*y0-yd, ones(npt,1)]*JKc1;
+    
+    JKc2 = zeros(3,9);
+    JKc2(1,2) = 1;
+    JKc2(3,4) = 1;
+    Jry = fy*(2*[Jy, zeros(npt,5)] - Jyd) + [2*x0-xd, 2*y0-yd, ones(npt,1)]*JKc2;
+
+    
     % Inverse radial distortion coeffs
     % source: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4934233/
     % doi: 10.3390/s16060807
