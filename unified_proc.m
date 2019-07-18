@@ -59,10 +59,6 @@ for i = 1:n_val
             A{i,3} = lpts;
         end
     end
-    
-    if i > 28
-    pause(1.5);
-    end
 end
 
 %% init cond
