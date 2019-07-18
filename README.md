@@ -2,13 +2,17 @@
 ## Capturing images and data for new calibration process
 - Requires `blaser_ros` and `ur5e_driver`
 
-First, start the ur5e driver and blaser processes. Refer to ~~~~~~
+First, start the ur5e driver and blaser processes.
+### Bring up UR5 arm
+[ur5e bringup info](https://github.com/biorobotics/ur5e_driver/blob/blaser/README.md). You only need to run the `roslaunnch ur5e_bringup.launch`
+
+[blaser bringup info](https://github.com/biorobotics/blaser-ros/blob/blaser_rewrite/README.md).
 
 Under `blaser-ros/blaser_rewrite` use the `add_im.py` script to capture calibration images. Usage:
 
 `python add_im.py /path/to/calibration/directory`
 
-Only 20-30 images are needed for calibration, but 
+Only 20-30 images are needed for calibration, but more are welcome. (It may slow the calibration significantly though)
 
 ## Running calibration process
 In the MATLAB script `unified_proc.m` change `n_val` to the number of calibration images captured. Also add your calibration directory to the MATLAB path.
