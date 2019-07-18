@@ -1,10 +1,14 @@
-function [resid] = laser_plane_err(A, world, state)
+function [resid] = laser_plane_err(A, world, state, summarize)
 %LASER_PLANE Gets laser plane error from state laser plane parameters
 %   Takes checkerboard location and orientation from handeye.
 %   Error is deviation from plane; also fit a line to 3d points and
 %    get laser line direction & take error in orientation
 % State- 18x1 vector of values to optimize over
 %  [fx fy cx cy k1 k2 p1 p2 k3 r p w x y z A B D] (C=-100)
+
+if ~exist('summarize','var')
+    summarize = false;
+end
 
 n_im = size(A,1);
 fx = state(1);
@@ -25,8 +29,10 @@ K = [fx,  0, cx;
       0,  0, 1];
 
   
-[resid, ch_loc, ch_ori] = handeye(A, world, state);
+[resid, ch_loc, ch_ori] = handeye(A, world, state, summarize);
 
+plane_resid = [];
+dir_resid = [];
 for i=1:n_im
     if size(A{i,3},1) == 0
         continue
@@ -52,8 +58,14 @@ for i=1:n_im
     dir = R(:,1);
     % dir' * ch_ori;
 
-    resid = [resid;20*errs; 50* dir' * ch_ori];
+    plane_resid = [plane_resid;50*errs];
+    dir_resid = [dir_resid; 20*dir'*ch_ori];
 end
 
+if summarize
+    resid = [resid;norm(plane_resid);norm(dir_resid)];
+else
+    resid = [resid;plane_resid;dir_resid];
+end
 end
 

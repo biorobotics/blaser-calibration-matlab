@@ -68,9 +68,11 @@ for i=1:n_val
     imagePoints_all = cat(3,imagePoints_all,A{i,2});
     end
 end
-cp = estimateCameraParameters(imagePoints_all, worldPoints);
+cp = estimateCameraParameters(imagePoints_all, worldPoints,...
+    'NumRadialDistortionCoefficients',3,'EstimateTangentialDistortion',true);
 
-state = [cp.FocalLength  cp.PrincipalPoint 0 0 0 0 0]';
+state = [cp.FocalLength  cp.PrincipalPoint cp.RadialDistortion(1:2),...
+    cp.TangentialDistortion cp.RadialDistortion(3)]';
 
 %% optimize??? (intrinsics)
 prev_err = inf;
@@ -79,7 +81,7 @@ err_f = @(st) vectorize_reproj(A, worldPoints, st);
 err = norm(err_f(state));
 fprintf('Initial error: %.7f\n', err);
 
-while prev_err/err-1 > 1E-2
+while prev_err/err-1 > 1E-5
     h = err_f(state);
     j = estimate_jac(err_f, state);
 
@@ -90,7 +92,7 @@ while prev_err/err-1 > 1E-2
     fprintf('Error: %.7f\n', err);
 end
 disp("DONE");
-fprintf('Final err: %.7f\n', err);
+fprintf('Final err: %.7f\n', vectorize_reproj(A,worldPoints,state,true));
 
 %% Evaluate gof (reprojection errors of camera intrinsic calibration)
 show_reproj_err(A,worldPoints,state);
@@ -106,7 +108,7 @@ err_f = @(st) handeye(A, worldPoints, st);
 err = norm(err_f(state));
 fprintf('Initial error: %.7f\n', err);
 
-while prev_err/err-1 > 1E-3
+while prev_err/err-1 > 1E-4
     h = err_f(state);
     j = estimate_jac(err_f, state);
    
@@ -117,7 +119,7 @@ while prev_err/err-1 > 1E-3
     fprintf('Error: %.7f\n', err);
 end
 disp("DONE");
-fprintf('Final err: %.7f\n', err);
+fprintf('Final err: %.7f %.7f\n', handeye(A, worldPoints, state, true));
 
 %% Eval hand-eye fit
 show_handeye(A, worldPoints, state);
@@ -136,8 +138,8 @@ err_f = @(st) laser_plane_err(A, worldPoints, st);
 err = norm(err_f(state));
 fprintf('Initial error: %.7f\n', err);
 
-% while prev_err/err-1 > 1E-6
-while 1
+while prev_err/err-1 > 1E-8
+% while 1
     h = err_f(state);
     j = estimate_jac(err_f, state);
 
@@ -145,10 +147,10 @@ while 1
     prev_err = err;
     state = state + ds;
     err = norm(err_f(state));
-    fprintf('Error: %.7f\n', err);
+    fprintf('Error: %.7f %.7f %.7f %.7f\n', laser_plane_err(A, worldPoints, state,true));
 end
 disp("DONE");
-fprintf('Final err: %.7f\n', err);
+fprintf('Final err: %.7f %.7f %.7f %.7f\n', laser_plane_err(A, worldPoints, state,true));
 
 %% show laser err
 show_laser_err(A, worldPoints, state);
