@@ -1,6 +1,5 @@
 function [] = show_laser_err(A,world,state)
-%SHOW_LASER_ERR Summary of this function goes here
-%   Detailed explanation goes here
+%SHOW_LASER_ERR Display of the laser err in the 
 
 n_im = size(A,1);
 fx = state(1);

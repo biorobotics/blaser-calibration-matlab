@@ -5,7 +5,7 @@ clear
 
 n_val = 30;
 
-%%
+%% Load calibration data files
 f = fopen('data.txt','r');
 squareSize = .005; % meters
 boardSize = [7,10];
@@ -59,31 +59,29 @@ for i = 1:n_val
             A{i,3} = lpts;
         end
     end
-    
-    if i > 28
-    pause(1.5);
-    end
 end
 
-%% init cond
+%% Initialize camera intrinsics
 imagePoints_all = [];
 for i=1:n_val
     if numel(A{i,2}) ~= 0
     imagePoints_all = cat(3,imagePoints_all,A{i,2});
     end
 end
-cp = estimateCameraParameters(imagePoints_all, worldPoints);
+cp = estimateCameraParameters(imagePoints_all, worldPoints,...
+    'NumRadialDistortionCoefficients',3,'EstimateTangentialDistortion',true);
 
-state = [cp.FocalLength  cp.PrincipalPoint 0 0 0 0 0]';
+state = [cp.FocalLength  cp.PrincipalPoint cp.RadialDistortion(1:2),...
+    cp.TangentialDistortion cp.RadialDistortion(3)]';
 
-%% optimize??? (intrinsics)
+%% Optimize camera intrinsics by minimizing reprojection error
 prev_err = inf;
 err_f = @(st) vectorize_reproj(A, worldPoints, st);
 
 err = norm(err_f(state));
 fprintf('Initial error: %.7f\n', err);
 
-while prev_err/err-1 > 1E-2
+while prev_err/err-1 > 1E-5
     h = err_f(state);
     j = estimate_jac(err_f, state);
 
@@ -94,23 +92,23 @@ while prev_err/err-1 > 1E-2
     fprintf('Error: %.7f\n', err);
 end
 disp("DONE");
-fprintf('Final err: %.7f\n', err);
+fprintf('Final err: %.7f\n', vectorize_reproj(A,worldPoints,state,true));
 
-%% Evaluate gof (reprojection errors of camera intrinsic calibration)
+%% Show reprojection errors of checkerboard
 show_reproj_err(A,worldPoints,state);
 title('Reprojection error (only camera)');
 
 %% init hand-eye
 state = [state(1:9)', 0,0,0, 0,0,0]';
 
-%% Optimize intrinsic + hand-eye
+%% Optimize handeye simultaneously with intrinsics
 prev_err = inf;
 err_f = @(st) handeye(A, worldPoints, st);
 
 err = norm(err_f(state));
 fprintf('Initial error: %.7f\n', err);
 
-while prev_err/err-1 > 1E-3
+while prev_err/err-1 > 1E-4
     h = err_f(state);
     j = estimate_jac(err_f, state);
    
@@ -121,27 +119,27 @@ while prev_err/err-1 > 1E-3
     fprintf('Error: %.7f\n', err);
 end
 disp("DONE");
-fprintf('Final err: %.7f\n', err);
+fprintf('Final err: %.7f %.7f\n', handeye(A, worldPoints, state, true));
 
-%% Eval hand-eye fit
+%% Show hand-eye fit
 show_handeye(A, worldPoints, state);
 title('Handeye (instrinsic + handeye)');
 
 show_reproj_err(A,worldPoints,state);
 title('Reprojection error (intrinsic + handeye)');
 
-%% init laser plane
+%% Initialize laser plane params
 state = [state(1:15); 4.099360;-196.800802;3613.930297];
 
-%% Optimize intrinsic + handeye + laser plane
+%% Optimize laser plane and handeye and intrinsics all simultaneously
 prev_err = inf;
 err_f = @(st) laser_plane_err(A, worldPoints, st);
 
 err = norm(err_f(state));
 fprintf('Initial error: %.7f\n', err);
 
-% while prev_err/err-1 > 1E-6
-while 1
+while prev_err/err-1 > 1E-8
+% while 1
     h = err_f(state);
     j = estimate_jac(err_f, state);
 
@@ -149,12 +147,12 @@ while 1
     prev_err = err;
     state = state + ds;
     err = norm(err_f(state));
-    fprintf('Error: %.7f\n', err);
+    fprintf('Error: %.7f %.7f %.7f %.7f\n', laser_plane_err(A, worldPoints, state,true));
 end
 disp("DONE");
-fprintf('Final err: %.7f\n', err);
+fprintf('Final err: %.7f %.7f %.7f %.7f\n', laser_plane_err(A, worldPoints, state,true));
 
-%% show laser err
+%% Show laser error
 show_laser_err(A, worldPoints, state);
 title('Laser plane error (instrinsic + handeye + laser)');
 

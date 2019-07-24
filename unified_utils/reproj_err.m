@@ -1,4 +1,4 @@
-% function [errs, jac] = reproj_err(pts, world, state)
+
 function [errs, R, t] = reproj_err(pts, world, state)
 % From the pts, world, and state, calculate the current reprojection errors
 % Will undistort the points first.

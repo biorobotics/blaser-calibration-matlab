@@ -1,4 +1,4 @@
-function [resid, ch_loc, ch_ori] = handeye(A, world, state)
+function [resid, ch_loc, ch_ori] = handeye(A, world, state, summarize)
 %HANDEYE Does hand-eye calibration via AX=XB
 %   Include reprojection in here to speed up.
 % A- cell of inputs (robot arm pose + camera points)
@@ -6,6 +6,9 @@ function [resid, ch_loc, ch_ori] = handeye(A, world, state)
 % state- 1x15 vector [fx fy cx cy k1 k2 p1 p2 k3 r p w x y z]
 
 n_im = size(A,1);
+if ~exist('summarize','var')
+    summarize = false;
+end
 
 r = state(10);
 p = state(11);
@@ -31,7 +34,7 @@ for i=1:n_im
     count = count+1;
     
     [err, R, t] = reproj_err(A{i,2}, world, state);
-    resid = [resid; err/10];
+    resid = [resid; err];
     
     B = [R,-R*t; 0,0,0,1];
     
@@ -67,8 +70,11 @@ for i=1:count
         handeye_resid = [handeye_resid;F;G];
     end
 end
-
-resid = [resid; handeye_resid];
+if summarize
+    resid = [norm(resid/30); norm(handeye_resid)];
+else
+    resid = [resid/30; handeye_resid];
+end
 
 end
 
