@@ -152,7 +152,6 @@ function [retpts, Jrx, Jry] = undistort_points(pts, state)
 %     xu = pts(:,1) + x0.*cdist;
 %     yu = pts(:,2) + y0.*cdist;
 
-<<<<<<< HEAD
 %     dx = (0:360)';
 %     inp = [cx+dx,cy*ones(size(dx))];
 %     blyats = cp.undistortPointsImpl(inp);
@@ -209,7 +208,6 @@ function [retpts, Jrx, Jry] = undistort_points(pts, state)
 %              x0.*y0, ...
 %              (r_sq + 2*y0.^2), ...
 %              y0.*drdk3];
-=======
 
     % inverse radial coefficients
 %     b1 = -k1;
@@ -222,5 +220,4 @@ function [retpts, Jrx, Jry] = undistort_points(pts, state)
 %     b7 = -7752*k1^7 + 15504*k1^5*k2 - 7752*k1^3*k2^2 + 816*k1*k2^3 - ...
 %         3876*k1^4*k3 + 2448*k1^2*k2*k3 - 136*k2^2*k3 - 136*k1*k3^2;
 
->>>>>>> calib_rewrite
 end

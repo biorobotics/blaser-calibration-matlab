@@ -29,3 +29,6 @@ octave-workspace
 
 # Windows Stuff
 *.ini
+
+# new data files
+blaser_data/*

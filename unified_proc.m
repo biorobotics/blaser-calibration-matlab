@@ -1,13 +1,13 @@
 %% Start
 addpath('unified_utils');
-addpath('blaser_data/1280_unified');
+addpath('blaser_data/1280_unified_new');
 clear
 
-n_val = 30;
+n_val = 36;
 
 %% Load calibration data files
 f = fopen('data.txt','r');
-squareSize = .005; % meters
+squareSize = .003; % meters
 boardSize = [7,10];
 [worldPoints] = generateCheckerboardPoints(boardSize,squareSize);
 threshold = 160;
@@ -147,6 +147,7 @@ while prev_err/err-1 > 1E-8
     prev_err = err;
     state = state + ds;
     err = norm(err_f(state));
+    fprintf('Til bound Error:%.9f\n',prev_err/err-1);  
     fprintf('Error: %.7f %.7f %.7f %.7f\n', laser_plane_err(A, worldPoints, state,true));
 end
 disp("DONE");
