@@ -22,7 +22,7 @@ function [pts] = find_laser_new(img)
     gb1 = int32(img(:,:,3));
     
 %     Color Balance
-    im_correct = color_balance(img,0.0, 0);
+    im_correct = color_balance(img,1.0, 0);
 %     imshow(im_correct);
 %       Masks    
     rmask = getredmask(im_correct);

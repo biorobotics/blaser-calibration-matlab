@@ -58,7 +58,7 @@ for i = 1:n_val
     if numel(laser_pixels) > 1
         coeffs = polyfit(laser_pixels(:,1), laser_pixels(:,2), 1);
         dists = abs(polyval(coeffs, laser_pixels(:,1)) - laser_pixels(:,2));
-        lpts = laser_pixels(dists < 3, :);
+        lpts = laser_pixels(dists < 2, :);
 
         coeffs2 = polyfit(lpts(:,1), lpts(:,2), 1);
         dists = abs(polyval(coeffs2, laser_pixels(:,1)) - laser_pixels(:,2));
