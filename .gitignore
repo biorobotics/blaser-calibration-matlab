@@ -32,3 +32,7 @@ octave-workspace
 
 # new data files
 blaser_data/*
+
+# miscelenaeous things in my directory
+laser_extraction.py
+plot_poses.m

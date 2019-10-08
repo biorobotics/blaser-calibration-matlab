@@ -1,13 +1,13 @@
 %% Start
 addpath('unified_utils');
-addpath('blaser_data/1280_unified_new');
+addpath('blaser_data/640_unified');
 clear
 
-n_val = 36;
+n_val = 24;
 
 %% Load calibration data files
 f = fopen('data.txt','r');
-squareSize = .003; % meters
+squareSize = .005; % meters
 boardSize = [7,10];
 [worldPoints] = generateCheckerboardPoints(boardSize,squareSize);
 threshold = 160;
@@ -39,9 +39,22 @@ for i = 1:n_val
         
         A{i,2} = imagePoints;
     end
+    laser_pixels = find_laser_new(I);
     
-    laser_pixels = find_laser(I, threshold);
+%     if numel(laser_pixels) > 1
+%         
+%         lpts = laser_pixels;
+% 
+%         if size(lpts, 1) > 30
+%             disp("Laser line found!");
+%             plot(lpts(:,1), lpts(:,2), 'g.');
+%             drawnow;
+%             A{i,3} = lpts;
+%         end
+%     end
     
+%     laser_pixels = find_laser(I, threshold);
+%     
     if numel(laser_pixels) > 1
         coeffs = polyfit(laser_pixels(:,1), laser_pixels(:,2), 1);
         dists = abs(polyval(coeffs, laser_pixels(:,1)) - laser_pixels(:,2));
@@ -122,6 +135,9 @@ disp("DONE");
 fprintf('Final err: %.7f %.7f\n', handeye(A, worldPoints, state, true));
 
 %% Show hand-eye fit
+fprintf('handeye calibration:\n<origin xyz="%.6f %.6f %.6f" rpy="%.6f %.6f %.6f"/>\n',...
+    state(13),state(14),state(15),state(12),state(11),state(10));
+
 show_handeye(A, worldPoints, state);
 title('Handeye (instrinsic + handeye)');
 
