@@ -15,7 +15,10 @@ Under `blaser-ros/blaser_rewrite` use the `add_im.py` script to capture calibrat
 Only 20-30 images are needed for calibration, but more are welcome. (It may slow the calibration significantly though)
 
 ## Running calibration process
-In the MATLAB script `unified_proc.m` change `n_val` to the number of calibration images captured. Also add your calibration directory to the MATLAB path.
+Specify the calibration directory containing data.txt and all the png files by setting this variable: `blaserCalibDataPath`. Example:
+```matlab
+blaserCalibDataPath = '/home/biorobotics/Desktop/calib_blasermini_a1001_640_480/'
+```
 
 The script should just run from then on. It's highly recommended to run it section by section (AHEM SARA)
 
