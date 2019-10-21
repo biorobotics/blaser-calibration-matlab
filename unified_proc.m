@@ -1,12 +1,24 @@
 %% Start
+clearvars -except blaserCalibDataPath
+close all
 addpath('unified_utils');
-addpath('blaser_data/640_unified');
-clear
 
-n_val = 24;
+if exist('blaserCalibDataPath', 'var') ~= 1
+    % Default calibration dataset
+    global blaserCalibDataPath %#ok<TLEV>
+    blaserCalibDataPath = './blaser_data/640_unified';
+end
+
+fprintf("Calibration dataset:\n    %s\n", blaserCalibDataPath);
+n_val = numel(dir(fullfile(blaserCalibDataPath, '*.png'))) - 1;
+
+fprintf("Dataset has %d images\n", n_val);
+
+global blaserCalibDataPath %#ok<REDEFGG>
 
 %% Load calibration data files
-f = fopen('data.txt','r');
+descFile = fullfile(blaserCalibDataPath, 'data.txt');
+descFile = fopen(descFile,'r');
 squareSize = .005; % meters
 boardSize = [7,10];
 [worldPoints] = generateCheckerboardPoints(boardSize,squareSize);
@@ -15,16 +27,16 @@ threshold = 160;
 A = cell(n_val, 3);
 
 figure;
-for i = 1:n_val
-    tr = fscanf(f, '[%f, %f, %f]\n', 3);
-    rot = fscanf(f, '[%f, %f, %f, %f]\n', 4);
+for ii = 1:n_val
+    tr = fscanf(descFile, '[%f, %f, %f]\n', 3);
+    rot = fscanf(descFile, '[%f, %f, %f, %f]\n', 4);
     quat = [rot(4), rot(1), rot(2), rot(3)];
-    A{i, 1} = [quat2rotm(quat), tr; 0,0,0,1];
+    A{ii, 1} = [quat2rotm(quat), tr; 0,0,0,1];
 
-    fprintf('Image %d\n', i);
+    fprintf('Image %d\n', ii);
     
-    fname = fscanf(f, '%s\n', 1);
-    I = imread(fname);
+    fname = fscanf(descFile, '%s\n', 1);
+    I = imread(fullfile(blaserCalibDataPath, fname));
     
     clf;
     imshow(I);
@@ -37,24 +49,10 @@ for i = 1:n_val
         plot(imagePoints(:,1), imagePoints(:,2), 'r');
         drawnow;
         
-        A{i,2} = imagePoints;
+        A{ii,2} = imagePoints;
     end
     laser_pixels = find_laser_new(I);
     
-%     if numel(laser_pixels) > 1
-%         
-%         lpts = laser_pixels;
-% 
-%         if size(lpts, 1) > 30
-%             disp("Laser line found!");
-%             plot(lpts(:,1), lpts(:,2), 'g.');
-%             drawnow;
-%             A{i,3} = lpts;
-%         end
-%     end
-    
-%     laser_pixels = find_laser(I, threshold);
-%     
     if numel(laser_pixels) > 1
         coeffs = polyfit(laser_pixels(:,1), laser_pixels(:,2), 1);
         dists = abs(polyval(coeffs, laser_pixels(:,1)) - laser_pixels(:,2));
@@ -66,19 +64,27 @@ for i = 1:n_val
 
         if size(lpts, 1) > 30
             disp("Laser line found!");
+            hold on
+            % Plot found points
             plot(lpts(:,1), lpts(:,2), 'g.');
+            % Plot interpolated line
+            X = linspace(1, size(I, 2), size(I, 2));
+            fline = polyval(coeffs, X);
+            plot(X, fline, '--', 'color', [0 1 1])
+            hold off
             drawnow;
+            waitforbuttonpress;
 
-            A{i,3} = lpts;
+            A{ii,3} = lpts;
         end
     end
 end
 
 %% Initialize camera intrinsics
 imagePoints_all = [];
-for i=1:n_val
-    if numel(A{i,2}) ~= 0
-    imagePoints_all = cat(3,imagePoints_all,A{i,2});
+for ii=1:n_val
+    if numel(A{ii,2}) ~= 0
+    imagePoints_all = cat(3,imagePoints_all,A{ii,2});
     end
 end
 cp = estimateCameraParameters(imagePoints_all, worldPoints,...
@@ -94,7 +100,7 @@ err_f = @(st) vectorize_reproj(A, worldPoints, st);
 err = norm(err_f(state));
 fprintf('Initial error: %.7f\n', err);
 
-while prev_err/err-1 > 1E-5
+while prev_err/err-1 > 1E-4
     h = err_f(state);
     j = estimate_jac(err_f, state);
 
@@ -121,7 +127,7 @@ err_f = @(st) handeye(A, worldPoints, st);
 err = norm(err_f(state));
 fprintf('Initial error: %.7f\n', err);
 
-while prev_err/err-1 > 1E-4
+while prev_err/err-1 > 1E-5
     h = err_f(state);
     j = estimate_jac(err_f, state);
    
@@ -136,7 +142,7 @@ fprintf('Final err: %.7f %.7f\n', handeye(A, worldPoints, state, true));
 
 %% Show hand-eye fit
 fprintf('handeye calibration:\n<origin xyz="%.6f %.6f %.6f" rpy="%.6f %.6f %.6f"/>\n',...
-    state(13),state(14),state(15),state(12),state(11),state(10));
+    state(13),state(14),state(15),state(10),state(11),state(12));
 
 show_handeye(A, worldPoints, state);
 title('Handeye (instrinsic + handeye)');
@@ -154,7 +160,7 @@ err_f = @(st) laser_plane_err(A, worldPoints, st);
 err = norm(err_f(state));
 fprintf('Initial error: %.7f\n', err);
 
-while prev_err/err-1 > 1E-8
+while prev_err/err-1 > 1E-6
 % while 1
     h = err_f(state);
     j = estimate_jac(err_f, state);
@@ -188,4 +194,4 @@ fprintf('Laser Plane:\n[%.5f, %.5f, -100, %.5f]\n',...
     state(16), state(17), state(18)); % a b d
 
 fprintf('handeye calibration:\n<origin xyz="%.6f %.6f %.6f" rpy="%.6f %.6f %.6f"/>\n',...
-    state(13),state(14),state(15),state(12),state(11),state(10));
+    state(13),state(14),state(15),state(10),state(11),state(12));
