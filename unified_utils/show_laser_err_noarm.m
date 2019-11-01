@@ -6,15 +6,15 @@ fx = state(1);
 fy = state(2);
 cx = state(3);
 cy = state(4);
-abc = [state(10), state(11), -100];
-D = state(12)/1000;
+abc = [state(16), state(17), -100];
+D = state(18)/1000;
 K = [fx,  0, cx;
       0, fy, cy;
       0,  0, 1];
 
 laser_pts = [];
 for i=1:n_im
-    if size(A{i,3},1) == 0
+    if size(A{i,3},1) == 0 || size(A{i,2},1) == 0
         continue
     end
 

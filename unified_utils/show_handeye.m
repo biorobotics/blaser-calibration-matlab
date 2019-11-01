@@ -58,6 +58,7 @@ for i=1:n_val
    
     % Checkerboard pose
     trplot(A{i,1}*aff/Bi, 'length',.05, 'color',cm(count,:));
+    %disp(A{i,1}*aff/Bi);
    
 %    positions = [positions; feat(1:3,4)'];
 %    norms = [norms; feat(1:3,3)'];
