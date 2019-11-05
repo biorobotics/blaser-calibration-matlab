@@ -23,7 +23,7 @@ end
 minLaserStripePts = 70;
 
 f_listing = dir(fullfile(calibDataPath, '*.png'));
-n_val = numel(f_listing) - 1;
+n_val = numel(f_listing);
 
 if n_val < 5
     fprintf("Warning: dataset is too small, exiting...\n");
