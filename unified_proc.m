@@ -50,36 +50,71 @@ fprintf("Handeye enabled:\n    %d\n", handEyeEnabled);
 
 A = cell(n_val, 3);
 
-figure;
+imgnames = repmat({''}, 1, n_val);
+
 for ii = 1:n_val
+    % Get image files and hand pose if applicable
     if handEyeEnabled
         tr = fscanf(descFile, '[%f, %f, %f]\n', 3);
         rot = fscanf(descFile, '[%f, %f, %f, %f]\n', 4);
         quat = [rot(4), rot(1), rot(2), rot(3)];
         A{ii, 1} = [quat2rotm(quat), tr; 0,0,0,1];
-        
-        fprintf('Image %d\n', ii);
-        fname = fscanf(descFile, '%s\n', 1);
+        imgnames{ii} = fscanf(descFile, '%s\n', 1);
     else
-        fname = f_listing(ii).name;
+        imgnames{ii} = f_listing(ii).name;
     end
     
-    I = imread(fullfile(calibDataPath, fname));
+    % Get checkerboard points
+    fname = imgnames{ii};
+    J = imread(fullfile(calibDataPath, fname));
     
-    clf;
-    imshow(I);
-    hold on;
-    drawnow;
-    
-    [imagePoints,boardSize_detected] = detectCheckerboardPoints(I);
+    [imagePoints,boardSize_detected] = detectCheckerboardPoints(J);
     if norm(boardSize_detected - boardSize) < 0.1
         disp("Checkerboard found!");
-        plot(imagePoints(:,1), imagePoints(:,2), 'r');
-        drawnow;
+        
         
         A{ii,2} = imagePoints;
     end
-    laser_pixels = find_laser_new(I);
+end
+
+%% Initialize camera intrinsics
+imagePoints_all = [];
+for ii=1:n_val
+    if numel(A{ii,2}) ~= 0
+    imagePoints_all = cat(3,imagePoints_all,A{ii,2});
+    end
+end
+cp = estimateCameraParameters(imagePoints_all, worldPoints, ...
+    'NumRadialDistortionCoefficients', 3, ...
+    'EstimateTangentialDistortion', true);
+
+state = [cp.FocalLength, cp.PrincipalPoint, cp.RadialDistortion(1:2), ...
+         cp.TangentialDistortion, cp.RadialDistortion(3)]';
+
+%% Get laser stripes
+figure;
+for ii = 1:n_val
+    fname = imgnames{ii};
+    
+    % Undistort image before processing
+    I = imread(fullfile(calibDataPath, fname));
+    [J, newOrigin] = undistortImage(I, cp, 'outputView', 'full');
+    
+    clf;
+    imshow(J);
+    hold on;
+    drawnow;
+    
+    imagePoints = A{ii,2};
+    if numel(imagePoints) ~= 0
+        imagePoints = undistortPoints(imagePoints, cp);
+        plot(imagePoints(:,1) - newOrigin(1), ...
+            imagePoints(:,2) - newOrigin(2), 'g*-');
+        drawnow;
+    end
+    
+    % Find laser lines
+    laser_pixels = find_laser_new(J);
     
     if numel(laser_pixels) > 1
         coeffs = polyfit(laser_pixels(:,1), laser_pixels(:,2), 1);
@@ -96,7 +131,7 @@ for ii = 1:n_val
             % Plot found points
             plot(lpts(:,1), lpts(:,2), 'g.');
             % Plot interpolated line
-            X = linspace(1, size(I, 2), size(I, 2));
+            X = linspace(1, size(J, 2), size(J, 2));
             fline = polyval(coeffs, X);
             plot(X, fline, '--', 'color', [0 1 1])
             hold off
@@ -112,19 +147,7 @@ if descFile > 0
     fclose(descFile);
 end
 
-%% Initialize camera intrinsics
-imagePoints_all = [];
-for ii=1:n_val
-    if numel(A{ii,2}) ~= 0
-    imagePoints_all = cat(3,imagePoints_all,A{ii,2});
-    end
-end
-cp = estimateCameraParameters(imagePoints_all, worldPoints,...
-    'NumRadialDistortionCoefficients', 3, ...
-    'EstimateTangentialDistortion', true);
 
-state = [cp.FocalLength  cp.PrincipalPoint cp.RadialDistortion(1:2),...
-    cp.TangentialDistortion cp.RadialDistortion(3)]';
 
 %% Optimize camera intrinsics by minimizing reprojection error
 prev_err = inf;
