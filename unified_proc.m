@@ -98,7 +98,7 @@ for ii = 1:n_val
     
     % Undistort image before processing
     I = imread(fullfile(calibDataPath, fname));
-    [J, newOrigin] = undistortImage(I, cp, 'outputView', 'full');
+    [J, newOrigin] = undistortImage(I, cp, 'outputView', 'same');
     
     clf;
     imshow(J);

@@ -21,6 +21,7 @@ K = [fx,  0, cx;
 
 [~, ch_loc, ch_ori] = handeye(A, world, state);
 lpts = [];
+%lpts = {};
 for i=1:n_im
     if size(A{i,3},1) == 0
         continue
@@ -33,10 +34,20 @@ for i=1:n_im
 
     s = -D./(abc * unitless); %1xN vector of depths
     lpts = [lpts, s.* (to_world(1:3, 1:3)*unitless) + to_world(1:3, 4)]; %3xN vectors of points
+    %lpts{i} = s.* (to_world(1:3, 1:3)*unitless) + to_world(1:3, 4); %3xN vectors of points
 end
 
 figure;
 scatter3(lpts(1,:),lpts(2,:),lpts(3,:));
+% hold on
+% for ii = 1:size(lpts, 2)
+%     if size(A{ii,3},1) == 0
+%         continue
+%     end
+% 
+%     plot3(lpts{ii}(1,:),lpts{ii}(2,:),lpts{ii}(3,:));
+% end
+
 hold on;
 axis tight;
 axis(axis);
