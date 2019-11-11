@@ -13,6 +13,10 @@ K = [fx,  0, cx;
       0,  0, 1];
 
 laser_pts = [];
+
+figure
+hold on
+
 for i=1:n_im
     if size(A{i,3},1) == 0 || size(A{i,2},1) == 0
         continue
@@ -20,17 +24,22 @@ for i=1:n_im
 
     checkerboard = undistort_points(A{i,2}, state);
     [R, t] = calc_rot_trans(checkerboard, world, state);
-    upts = undistort_points(A{i,3}, state);
+    %upts = undistort_points(A{i,3}, state);
+    upts = A{i,3};
     
     unitless = K \ [upts';ones(1,size(upts,1))]; %3xN vectors of points
     s = -D./(abc * unitless); %1xN vector of depths
     lpts = s.* unitless; %3xN vectors of points
 
-    laser_pts = [laser_pts, R*lpts - R*t];
+    newpts = R*lpts - R*t;
+    laser_pts = [laser_pts, newpts];
+    
+    scatter3(newpts(1,:),newpts(2,:),newpts(3,:));
+    waitforbuttonpress
 end
 
-figure;
-scatter3(laser_pts(1,:),laser_pts(2,:),laser_pts(3,:));
+%figure;
+%scatter3(laser_pts(1,:),laser_pts(2,:),laser_pts(3,:));
 hold on;
 axis tight;
 axis(axis);

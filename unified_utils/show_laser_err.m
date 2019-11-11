@@ -22,23 +22,30 @@ K = [fx,  0, cx;
 [~, ch_loc, ch_ori] = handeye(A, world, state);
 lpts = [];
 %lpts = {};
+figure
+hold on
 for i=1:n_im
     if size(A{i,3},1) == 0
         continue
     end
     
-    upts = undistort_points(A{i,3}, state);
+    %upts = undistort_points(A{i,3}, state);
+    upts = A{i,3};
     unitless = K \ [upts';ones(1,size(upts,1))]; %3xN vectors of points
     
     to_world = A{i,1}*aff;
 
     s = -D./(abc * unitless); %1xN vector of depths
-    lpts = [lpts, s.* (to_world(1:3, 1:3)*unitless) + to_world(1:3, 4)]; %3xN vectors of points
+    
+    newpts = s.* (to_world(1:3, 1:3)*unitless) + to_world(1:3, 4);
+    lpts = [lpts, newpts]; %3xN vectors of points
     %lpts{i} = s.* (to_world(1:3, 1:3)*unitless) + to_world(1:3, 4); %3xN vectors of points
+    scatter3(newpts(1,:),newpts(2,:),newpts(3,:));
+    waitforbuttonpress
 end
 
-figure;
-scatter3(lpts(1,:),lpts(2,:),lpts(3,:));
+%figure;
+%scatter3(lpts(1,:),lpts(2,:),lpts(3,:));
 % hold on
 % for ii = 1:size(lpts, 2)
 %     if size(A{ii,3},1) == 0

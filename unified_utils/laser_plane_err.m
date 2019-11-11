@@ -38,8 +38,8 @@ for i=1:n_im
         continue
     end
     
-    upts = undistort_points(A{i,3}, state);
-%     upts = A{i,3};
+%    upts = undistort_points(A{i,3}, state);
+    upts = A{i,3};
     unitless = K \ [upts';ones(1,size(upts,1))]; %3xN vectors of points
     
     to_world = A{i,1}*aff;
