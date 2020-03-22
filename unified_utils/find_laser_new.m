@@ -112,7 +112,7 @@ function [mask] = getredmask(img)
     channel2Min = 0.000;
     channel2Max = 1.000;
     % Define thresholds for channel 3 based on histogram settings
-    channel3Min = 0.600;
+    channel3Min = 0.400;
     channel3Max = 1.000;
     % Create mask based on chosen histogram thresholds
     sliderBW = ( (hsv_img(:,:,1) >= channel1Min) | (hsv_img(:,:,1) <= channel1Max) ) & ...

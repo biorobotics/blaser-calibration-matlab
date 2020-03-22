@@ -31,7 +31,8 @@ for i=1:n_im
 
     [rpr_err, R, t] = reproj_err(A{i,2}, world, state);
     rpr_resid = [rpr_resid;.1*rpr_err];
-    upts = undistort_points(A{i,3}, state);
+    %upts = undistort_points(A{i,3}, state);
+    upts = A{i,3};
     
     unitless = K \ [upts';ones(1,size(upts,1))]; %3xN vectors of points
     s = -D./(abc * unitless); %1xN vector of depths

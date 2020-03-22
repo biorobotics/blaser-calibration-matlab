@@ -114,6 +114,7 @@ for ii = 1:n_val
     end
     
     % Find laser lines
+    %laser_pixels = find_laser(J, 100);
     laser_pixels = find_laser_new(J);
     
     if numel(laser_pixels) > 1
@@ -228,7 +229,7 @@ end
 err = norm(err_f(state));
 fprintf('Initial error: %.7f\n', err);
 
-while prev_err/err-1 > 1E-6
+while prev_err/err-1 > 1E-5
 % while 1
     h = err_f(state);
     j = estimate_jac(err_f, state);
@@ -271,6 +272,7 @@ end
 show_reproj_err(A,worldPoints,state);
 title('Reprojection error (intrinsic + handeye + laser)');
 
+
 %% Display results in a nice way
 fprintf('Intrinsic matrix:\n[%.5f, 0, %.5f, 0, %.5f, %.5f, 0, 0, 1]\n',...
     state(1), state(3), state(2), state(4)); % fx, cx, fy, cy
@@ -281,6 +283,8 @@ fprintf('Laser Plane:\n[%.5f, %.5f, -100, %.5f]\n',...
 
 if handEyeEnabled
     fprintf('handeye calibration:\n<origin xyz="%.6f %.6f %.6f" rpy="%.6f %.6f %.6f"/>\n',...
+        state(13),state(14),state(15),state(10),state(11),state(12));
+    fprintf('handeye calibration:\n[%.6f, %.6f, %.6f, %.6f, %.6f, %.6f]\n', ...
         state(13),state(14),state(15),state(10),state(11),state(12));
 end
 

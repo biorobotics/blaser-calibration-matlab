@@ -22,7 +22,8 @@ for i=1:n_im
     end
     
     checkerboard = undistort_points(A{i,2}, state);
-    lpts = undistort_points(A{i,3}, state);
+    %lpts = undistort_points(A{i,3}, state);
+    lpts = A{i,3};
     
     [R, t] = calc_rot_trans(checkerboard, world, state);
     R=R';
