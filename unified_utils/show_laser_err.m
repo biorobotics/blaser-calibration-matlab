@@ -41,7 +41,7 @@ for i=1:n_im
     lpts = [lpts, newpts]; %3xN vectors of points
     %lpts{i} = s.* (to_world(1:3, 1:3)*unitless) + to_world(1:3, 4); %3xN vectors of points
     scatter3(newpts(1,:),newpts(2,:),newpts(3,:));
-    waitforbuttonpress
+    %waitforbuttonpress
 end
 
 %figure;

@@ -1,5 +1,6 @@
 function [pts] = find_laser(img, thresh)
-    red = img(:,:,1);    
+    red = img(:,:,1);
+    red = max(0, red-img(:,:,2)-img(:,:,3));
     pts = [];
     
     % Slice img along colums

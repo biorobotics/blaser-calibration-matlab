@@ -35,7 +35,7 @@ for i=1:n_im
     laser_pts = [laser_pts, newpts];
     
     scatter3(newpts(1,:),newpts(2,:),newpts(3,:));
-    waitforbuttonpress
+    %waitforbuttonpress
 end
 
 %figure;
